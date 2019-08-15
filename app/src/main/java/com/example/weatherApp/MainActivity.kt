@@ -50,10 +50,13 @@ class MainActivity : AppCompatActivity() {
             val realm = Realm.getDefaultInstance()
             val e = realm.where(CurrentWeather::class.java).findFirst()
             if (e != null) {
-                currentTempTV.text = e.temp.toString()
-                maxTempTV.text = e.maxTemp.toString()
-                minTempTV.text = e.minTemp.toString()
-                windSpeedTV.text = e.windSpeed.toString()
+                currentTempTV.text = e.temp.toString().plus("℃")
+                maxTempTV.text = e.maxTemp.toString().plus("℃")
+                minTempTV.text = e.minTemp.toString().plus("℃")
+                windSpeedTV.text = e.windSpeed.toString().plus("m/h")
+                sunriseTV.text = e.getSunriseTime()
+                sunsetTV.text = e.getSunsetTime()
+                humidity.text = e.humidity.toString().plus("%")
                 val imageUrl = "http://openweathermap.org/img/wn/".plus(e.icon.plus("@2x.png"))
                 Picasso.with(this).load(imageUrl).into(imageView)
             }
