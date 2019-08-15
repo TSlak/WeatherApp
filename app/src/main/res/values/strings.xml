@@ -1,0 +1,13 @@
+<resources>
+    <string name="app_name">Weather App</string>
+    <string name="currentDay">13/12/2019, FRIDAY</string>
+    <string name="currentTime">16:01</string>
+    <string name="refresh">Ref</string>
+    <string name="toggle">Tog</string>
+    <string name="locality">locality</string>
+    <string name="weatherimage">weatherImage</string>
+    <string name="currentTemp">27.0 C</string>
+    <string name="dayTemp">27.0 C</string>
+    <string name="nightTemp">23.0 C</string>
+    <string name="windSpeed">24.1 km/h</string>
+</resources>
