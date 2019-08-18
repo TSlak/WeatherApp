@@ -1,6 +1,8 @@
 package com.example.weatherApp.RestServices
 
 import com.example.weatherApp.dataBase.CurrentWeather
+import com.example.weatherApp.dataBase.FiveDayWeather
+import com.example.weatherApp.dataBase.FiveDayWeatherList
 import com.google.gson.Gson
 import io.realm.Realm
 import okhttp3.*
@@ -31,8 +33,8 @@ class WeatherDataRequest {
 
             override fun onResponse(call: Call, response: Response) {
                 try {
-                    parseJson<DataParseClassFor5Day>(response.body!!.string())
-
+                    val result = parseJson<DataParseClassFor5Day>(response.body!!.string())
+                    saveFiveDayWeather(result)
                     consumer.accept(1)
                 } catch (e: Exception) {
                 }
@@ -63,11 +65,8 @@ class WeatherDataRequest {
             }
 
             override fun onResponse(call: Call, response: Response) {
-
                 val result = parseJson<DataParseClassForCurrentDay>(response.body!!.string())
-
                 saveCurrentWeather(result)
-
                 consumer.accept(1)
             }
         })
@@ -77,18 +76,42 @@ class WeatherDataRequest {
         val realm = Realm.getDefaultInstance()
         realm.beginTransaction()
         val currentWeather = realm.createObject(CurrentWeather::class.java)
-        currentWeather.temp = data.main.temp
-        currentWeather.maxTemp = data.main.temp_max
-        currentWeather.minTemp = data.main.temp_min
+        if (data.main != null) {
+            currentWeather.temp = data.main.temp
+            currentWeather.maxTemp = data.main.temp_max
+            currentWeather.minTemp = data.main.temp_min
+        }
         currentWeather.windSpeed = data.wind.speed
         currentWeather.sunset = data.sys.sunset
         currentWeather.sunrise = data.sys.sunrise
         if (!data.weather.isNullOrEmpty()) {
             currentWeather.description = data.weather[0].description
             currentWeather.icon = data.weather[0].icon
-            currentWeather.humidity = data.main.humidity
         }
+        currentWeather.humidity = data.main.humidity
+        currentWeather.pressure = data.main.pressure
         realm.commitTransaction()
 
+    }
+
+    private fun saveFiveDayWeather(data: DataParseClassFor5Day) {
+        val realm = Realm.getDefaultInstance()
+        realm.beginTransaction()
+        val fiveDayWeather = realm.createObject(FiveDayWeather::class.java)
+        fiveDayWeather.cityName = data.city.name
+        for (item in data.list) {
+            val list = FiveDayWeatherList()
+            if (!item.weather.isNullOrEmpty()) {
+                list.description = item.weather.get(0).description
+                list.icon = item.weather.get(0).icon
+            }
+            list.dt = item.dt
+            list.humidity = item.main.humidity
+            list.pressure = item.main.pressure
+            list.temp = item.main.temp
+            list.windSpeed = item.wind.speed
+            fiveDayWeather.list.add(list)
+        }
+        realm.commitTransaction()
     }
 }

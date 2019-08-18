@@ -36,7 +36,7 @@ data class DataParseClassForCurrentDay(
 
     data class Wind(
         @SerializedName("speed") val speed: Double,
-        @SerializedName("deg") val deg: Int
+        @SerializedName("deg") val deg: Double
     )
 
     data class Main(

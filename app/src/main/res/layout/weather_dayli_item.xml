@@ -1,0 +1,37 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+              xmlns:app="http://schemas.android.com/apk/res-auto" xmlns:tools="http://schemas.android.com/tools"
+              android:orientation="vertical"
+              android:layout_width="wrap_content"
+              android:layout_marginEnd="1dp"
+              android:background="@drawable/relative_layout_background"
+              android:padding="10dp"
+              android:layout_height="match_parent">
+    <TextView
+            android:id="@+id/weekdayTV"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            tools:text="111111"
+            android:layout_weight="1" android:textAlignment="center" android:textSize="20sp"/>
+    <ImageView
+            android:id="@+id/imageWeather"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:scaleType="fitCenter"
+            android:layout_weight="2" tools:srcCompat="@tools:sample/avatars[0]"
+            android:contentDescription="@string/weatherimage"/>
+    <androidx.constraintlayout.widget.ConstraintLayout android:layout_width="match_parent"
+                                                       android:layout_height="wrap_content"
+                                                       android:layout_weight="1">
+        <TextView
+                android:id="@+id/temperatureTV"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                tools:text="111111"
+                android:textAlignment="center" android:textSize="20sp" app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintStart_toStartOf="parent" android:layout_marginStart="8dp"
+                app:layout_constraintEnd_toEndOf="parent" android:layout_marginEnd="8dp"
+                android:layout_marginBottom="16dp"/>
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+</LinearLayout>

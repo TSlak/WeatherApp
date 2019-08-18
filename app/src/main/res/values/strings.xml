@@ -10,4 +10,6 @@
     <string name="dayTemp">27.0 C</string>
     <string name="nightTemp">23.0 C</string>
     <string name="windSpeed">24.1 km/h</string>
+    <string name="pressure">1000Бар</string>
+    <string name="searchButton">Кнопка поиска</string>
 </resources>
