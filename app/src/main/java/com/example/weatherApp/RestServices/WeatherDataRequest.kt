@@ -1,27 +1,32 @@
 package com.example.weatherApp.RestServices
 
 import com.example.weatherApp.dataBase.CurrentWeather
+import com.example.weatherApp.dataBase.DailyWeather
 import com.example.weatherApp.dataBase.FiveDayWeather
-import com.example.weatherApp.dataBase.FiveDayWeatherList
+import com.example.weatherApp.dataBase.HourlyWeather
 import com.google.gson.Gson
 import io.realm.Realm
+import io.realm.RealmList
 import okhttp3.*
 import java.io.IOException
+import java.text.SimpleDateFormat
+import java.util.*
 import java.util.function.IntConsumer
+import kotlin.collections.HashSet
 
 class WeatherDataRequest {
-    val API_KEY = "58be2a871e2354feae0f3ae5e39f99b3"
-    val FORECAST_API_URL = "https://api.openweathermap.org/data/2.5/forecast?"
-    val CURRENT_API_URL = "https://api.openweathermap.org/data/2.5/weather?"
+    private val apiKey = "58be2a871e2354feae0f3ae5e39f99b3"
+    private val forecastApiUrl = "https://api.openweathermap.org/data/2.5/forecast?"
+    private val currentApiUrl = "https://api.openweathermap.org/data/2.5/weather?"
 
     fun getWeatherDataFor5Day(locality: String?, consumer: IntConsumer) {
         val client = OkHttpClient.Builder().build()
         val request = Request.Builder()
             .url(
-                FORECAST_API_URL
+                forecastApiUrl
                     .plus("q=Makhachkala,ru")
                     .plus("&appid=")
-                    .plus(API_KEY)
+                    .plus(apiKey)
                     .plus("&units=metric")
                     .plus("&lang=ru")
             )
@@ -51,10 +56,10 @@ class WeatherDataRequest {
         val client = OkHttpClient.Builder().build()
         val request = Request.Builder()
             .url(
-                CURRENT_API_URL
+                currentApiUrl
                     .plus("q=Makhachkala,ru")
                     .plus("&appid=")
-                    .plus(API_KEY)
+                    .plus(apiKey)
                     .plus("&units=metric")
                     .plus("&lang=ru")
             )
@@ -76,11 +81,9 @@ class WeatherDataRequest {
         val realm = Realm.getDefaultInstance()
         realm.beginTransaction()
         val currentWeather = realm.createObject(CurrentWeather::class.java)
-        if (data.main != null) {
-            currentWeather.temp = data.main.temp
-            currentWeather.maxTemp = data.main.temp_max
-            currentWeather.minTemp = data.main.temp_min
-        }
+        currentWeather.temp = data.main.temp
+        currentWeather.maxTemp = data.main.temp_max
+        currentWeather.minTemp = data.main.temp_min
         currentWeather.windSpeed = data.wind.speed
         currentWeather.sunset = data.sys.sunset
         currentWeather.sunrise = data.sys.sunrise
@@ -99,19 +102,39 @@ class WeatherDataRequest {
         realm.beginTransaction()
         val fiveDayWeather = realm.createObject(FiveDayWeather::class.java)
         fiveDayWeather.cityName = data.city.name
-        for (item in data.list) {
-            val list = FiveDayWeatherList()
-            if (!item.weather.isNullOrEmpty()) {
-                list.description = item.weather.get(0).description
-                list.icon = item.weather.get(0).icon
-            }
-            list.dt = item.dt
-            list.humidity = item.main.humidity
-            list.pressure = item.main.pressure
-            list.temp = item.main.temp
-            list.windSpeed = item.wind.speed
-            fiveDayWeather.list.add(list)
-        }
+        fiveDayWeather.dailyWeather = parseHourlyWeather(data.list)
         realm.commitTransaction()
+    }
+
+    private fun parseHourlyWeather(hourlyWeather: List<DataParseClassFor5Day.List>): RealmList<DailyWeather> {
+        val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.ROOT)
+        val realm = Realm.getDefaultInstance()
+        val dateSet = HashSet<Date>()
+        for (item in hourlyWeather) {
+            dateSet.add(sdf.parse(item.dt_txt))
+        }
+
+        val result = RealmList<DailyWeather>()
+        for (date in dateSet) {
+            val dw = realm.createObject(DailyWeather::class.java)
+            dw.date = date
+            for (item in hourlyWeather) {
+                if (date.compareTo(sdf.parse(item.dt_txt)) == 0) {
+                    val hw = realm.createObject(HourlyWeather::class.java)
+                    if (!item.weather.isNullOrEmpty()) {
+                        hw.description = item.weather[0].description
+                        hw.icon = item.weather[0].icon
+                    }
+                    hw.dt = item.dt
+                    hw.humidity = item.main.humidity
+                    hw.pressure = item.main.pressure
+                    hw.temp = item.main.temp
+                    hw.windSpeed = item.wind.speed
+                    dw.hourlyWeatherList.add(hw)
+                }
+            }
+            result.add(dw)
+        }
+        return result
     }
 }

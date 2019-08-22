@@ -7,42 +7,43 @@ import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
-import com.example.weatherApp.dataBase.FiveDayWeatherList
+import com.example.weatherApp.dataBase.DailyWeather
+import com.example.weatherApp.dataBase.HourlyWeather
 import com.example.weatherApp.helper.getWeatherImageId
-import com.squareup.picasso.Picasso
+import java.text.SimpleDateFormat
+import java.util.*
 
 
-class WeatherDayliDataAdapter(var context: Context, var weathers: List<FiveDayWeatherList>) :
+class WeatherDayliDataAdapter(context: Context, var dailyWeatherList: List<DailyWeather>) :
     RecyclerView.Adapter<WeatherDayliDataAdapter.ViewHolder>() {
-    var inflater = LayoutInflater.from(context);
-
+    var inflater = LayoutInflater.from(context)
+    val sdf = SimpleDateFormat("dd:MM", Locale.ROOT)
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         val view = inflater.inflate(R.layout.weather_dayli_item, parent, false)
         return ViewHolder(view)
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-        val weather = weathers.get(position)
-//        val imageUrl = "http://openweathermap.org/img/wn/".plus(weather.icon.plus("@2x.png"))
-//        Picasso.with(context).load(imageUrl).into(holder.imageView)
-        holder.imageView.setImageResource(getWeatherImageId(weather.icon))
-        holder.weekdayTV.text = weather.getWeatherTime()
-        holder.temperatureTV.text = weather.temp.toString()
+        val dailyWeather = dailyWeatherList[position]
+        holder.imageView.setImageResource(getWeatherImageId(dailyWeather.hourlyWeatherList.first()!!.icon))
+        val hourlyWeatherTemp = dailyWeather.hourlyWeatherList
+            .map(HourlyWeather::temp)
+        holder.weekdayTV.text = sdf.format(dailyWeather.date)
+        holder.temperatureTV.text = hourlyWeatherTemp.max()
+            .toString()
+            .plus(" ℃")
+            .plus("\n")
+            .plus(hourlyWeatherTemp.min())
+            .plus(" ℃")
     }
 
     override fun getItemCount(): Int {
-        return weathers.size
+        return dailyWeatherList.size
     }
 
     inner class ViewHolder internal constructor(view: View) : RecyclerView.ViewHolder(view) {
-        internal val imageView: ImageView
-        internal val weekdayTV: TextView
-        internal val temperatureTV: TextView
-
-        init {
-            imageView = view.findViewById(R.id.imageWeather) as ImageView
-            weekdayTV = view.findViewById(R.id.weekdayTV)
-            temperatureTV = view.findViewById(R.id.temperatureTV)
-        }
+        internal val imageView: ImageView = view.findViewById(R.id.imageWeather) as ImageView
+        internal val weekdayTV: TextView = view.findViewById(R.id.weekdayTV)
+        internal val temperatureTV: TextView = view.findViewById(R.id.temperatureTV)
     }
 }
