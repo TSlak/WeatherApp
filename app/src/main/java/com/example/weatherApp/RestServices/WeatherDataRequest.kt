@@ -82,6 +82,7 @@ class WeatherDataRequest {
         realm.beginTransaction()
         val currentWeather = realm.createObject(CurrentWeather::class.java)
         currentWeather.temp = data.main.temp
+        currentWeather.cityName = data.name
         currentWeather.maxTemp = data.main.temp_max
         currentWeather.minTemp = data.main.temp_min
         currentWeather.windSpeed = data.wind.speed

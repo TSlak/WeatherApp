@@ -1,15 +1,19 @@
 <resources>
     <string name="app_name">Weather App</string>
-    <string name="currentDay">13/12/2019, FRIDAY</string>
-    <string name="currentTime">16:01</string>
+    <string name="current_day">13/12/2019, FRIDAY</string>
+    <string name="current_time">16:01</string>
     <string name="refresh">Ref</string>
     <string name="toggle">Tog</string>
     <string name="locality">locality</string>
-    <string name="weatherimage">weatherImage</string>
-    <string name="currentTemp">27.0 C</string>
-    <string name="dayTemp">27.0 C</string>
-    <string name="nightTemp">23.0 C</string>
-    <string name="windSpeed">24.1 km/h</string>
+    <string name="weather_image">weatherImage</string>
+    <string name="current_temp">27.0 C</string>
+    <string name="wind_speed">24.1 km/h</string>
+    <string name="wind_speed_unit">m/s</string>
+    <string name="pressure_unit">hpa</string>
     <string name="pressure">1000Бар</string>
-    <string name="searchButton">Кнопка поиска</string>
+    <string name="last_update">LAST UPDATE</string>
+    <string name="celsius">℃</string>
+    <string name="refresh_weather">Обновление погоды</string>
+    <string name="error_connected_server">Ошибка соединения с сервером</string>
+    <string name="next_5_days">Next 5 days</string>
 </resources>

@@ -6,6 +6,7 @@ import java.util.*
 
 open class CurrentWeather : RealmObject() {
     var temp = 0.0
+    var cityName = ""
     var maxTemp = 0.0
     var minTemp = 0.0
     var windSpeed = 0.0

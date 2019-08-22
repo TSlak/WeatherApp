@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+        android:width="460dp"
+        android:height="250dp"
+        android:viewportWidth="460"
+        android:viewportHeight="250">
+
+    <path
+            android:strokeColor="#FFFFFF"
+            android:strokeWidth="3.5"
+            android:pathData="M 50.5 42 L 50.5 256.462384" />
+    <path
+            android:strokeColor="#FFFFFF"
+            android:strokeWidth="3.5"
+            android:pathData="M 404.5 42.453125 L 404.5 255.603307" />
+    <path
+            android:strokeColor="#FFFFFF"
+            android:strokeWidth="5.5"
+            android:pathData="M 227.5 133.453125 C 330.224963469 133.453125 413.5 216.728161531 413.5 319.453125 C 413.5 422.178088469 330.224963469 505.453125 227.5 505.453125 C 124.775036531 505.453125 41.5 422.178088469 41.5 319.453125 C 41.5 216.728161531 124.775036531 133.453125 227.5 133.453125 Z" />
+    <path
+            android:strokeColor="#FFFFFF"
+            android:strokeWidth="3.5"
+            android:pathData="M 50.5 15.453125 C 58.2319864976 15.453125 64.5 21.7211385024 64.5 29.453125 C 64.5 37.1851114976 58.2319864976 43.453125 50.5 43.453125 C 42.7680135024 43.453125 36.5 37.1851114976 36.5 29.453125 C 36.5 21.7211385024 42.7680135024 15.453125 50.5 15.453125 Z" />
+    <path
+            android:strokeColor="#FFFFFF"
+            android:strokeWidth="3.5"
+            android:pathData="M 405 15 C 412.731986498 15 419 21.2680135024 419 29 C 419 36.7319864976 412.731986498 43 405 43 C 397.268013502 43 391 36.7319864976 391 29 C 391 21.2680135024 397.268013502 15 405 15 Z" />
+    <path
+            android:strokeColor="#FFFFFF"
+            android:strokeWidth="4.5"
+            android:pathData="M 230.5 116.453125 C 239.336555997 116.453125 246.5 123.616569003 246.5 132.453125 C 246.5 141.289680997 239.336555997 148.453125 230.5 148.453125 C 221.663444003 148.453125 214.5 141.289680997 214.5 132.453125 C 214.5 123.616569003 221.663444003 116.453125 230.5 116.453125 Z" />
+</vector>

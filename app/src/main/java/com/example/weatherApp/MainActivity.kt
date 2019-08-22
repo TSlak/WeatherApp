@@ -1,7 +1,6 @@
 package com.example.weatherApp
 
 import android.os.Bundle
-import android.view.View
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
@@ -10,6 +9,7 @@ import com.example.weatherApp.dataBase.CurrentWeather
 import com.example.weatherApp.dataBase.FiveDayWeather
 import com.example.weatherApp.helper.getWeatherImageId
 import io.realm.Realm
+import io.realm.Sort
 import kotlinx.android.synthetic.main.activity_main.*
 import java.text.SimpleDateFormat
 import java.util.*
@@ -17,32 +17,33 @@ import java.util.function.IntConsumer
 
 
 class MainActivity : AppCompatActivity(), SwipeRefreshLayout.OnRefreshListener {
-    private val currentDaySdf: SimpleDateFormat = SimpleDateFormat("dd.MM.yyyy EEEE", Locale.ROOT)
+    private val currentDaySdf: SimpleDateFormat = SimpleDateFormat("dd.MM", Locale.ROOT)
     private val currentTimeSdf: SimpleDateFormat = SimpleDateFormat("HH:mm", Locale.ROOT)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         Realm.init(this)
         swipeRefreshLayout.setOnRefreshListener(this)
-        swipeRefreshLayout.setColorSchemeResources(R.color.colorAccent, R.color.colorPrimaryDark, R.color.colorPrimary);
-        refreshWeatherData(null)
+        swipeRefreshLayout.setColorSchemeResources(R.color.colorAccent, R.color.colorPrimaryDark, R.color.colorPrimary)
+        showWeather()
+        refreshWeatherData()
     }
 
     override fun onRefresh() {
         swipeRefreshLayout.setRefreshing(true)
-        refreshWeatherData(null)
+        refreshWeatherData()
     }
 
-    fun refreshWeatherData(view: View?) {
-        Toast.makeText(this, "Обновление погоды", Toast.LENGTH_LONG).show()
+    fun refreshWeatherData() {
+        Toast.makeText(this, R.string.refresh_weather, Toast.LENGTH_LONG).show()
         val wfd = WeatherDataRequest()
         wfd.getCurrentWeather(null, IntConsumer { i ->
             this.runOnUiThread {
                 if (i == 0) {
-                    Toast.makeText(this, "Ошибка соединения с сервером дневной", Toast.LENGTH_LONG).show()
+                    Toast.makeText(this, R.string.error_connected_server, Toast.LENGTH_LONG).show()
                 }
                 if (i == 1) {
-                    updateWeather()
+                    showWeather()
                 }
             }
         })
@@ -50,7 +51,7 @@ class MainActivity : AppCompatActivity(), SwipeRefreshLayout.OnRefreshListener {
         wfd.getWeatherDataFor5Day(null, IntConsumer { i ->
             this.runOnUiThread {
                 if (i == 0) {
-                    Toast.makeText(this, "Ошибка соединения с сервером почасовой", Toast.LENGTH_LONG).show()
+                    Toast.makeText(this, R.string.error_connected_server, Toast.LENGTH_LONG).show()
                 }
                 if (i == 1) {
                     val realm = Realm.getDefaultInstance()
@@ -65,19 +66,27 @@ class MainActivity : AppCompatActivity(), SwipeRefreshLayout.OnRefreshListener {
         })
     }
 
-    private fun updateWeather() {
+    private fun showWeather() {
         this.runOnUiThread {
             val realm = Realm.getDefaultInstance()
-            val e = realm.where(CurrentWeather::class.java).findFirst()
+            val e = realm.where(CurrentWeather::class.java)
+                .sort("date", Sort.DESCENDING)
+                .findFirst()
             if (e != null) {
-                currentTempTV.text = e.temp.toString().plus(" ℃")
-                windSpeedTV.text = e.windSpeed.toString().plus(" m/s")
+                currentTempTV.text = e.temp.toString().plus(" ").plus(resources.getString(R.string.celsius))
+                windSpeedTV.text = e.windSpeed.toString().plus(" ").plus(resources.getString(R.string.wind_speed_unit))
                 sunriseTV.text = e.getSunriseTime()
                 sunsetTV.text = e.getSunsetTime()
                 humidityTV.text = e.humidity.toString().plus("%")
                 descriptionTV.text = e.description
-                pressureTV.text = e.pressure.toString().plus(" hpa")
-                imageView.setImageResource(getWeatherImageId(e.icon))
+                pressureTV.text = e.pressure.toString().plus(" ").plus(resources.getString(R.string.pressure_unit))
+                weatherImageView.setImageResource(getWeatherImageId(e.icon))
+                localityTV.text = e.cityName
+                updateDateTimeTV.text = resources.getString(R.string.last_update)
+                    .plus(" ")
+                    .plus(currentDaySdf.format(e.date))
+                    .plus(" | ")
+                    .plus(currentTimeSdf.format(e.date))
             }
         }
     }
