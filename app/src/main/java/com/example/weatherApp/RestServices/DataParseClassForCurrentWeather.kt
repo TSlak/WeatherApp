@@ -3,7 +3,7 @@ package com.example.weatherApp.RestServices
 import com.google.gson.annotations.SerializedName
 import java.util.*
 
-data class DataParseClassForCurrentDay(
+data class DataParseClassForCurrentWeather(
     @SerializedName("coord") val coord: Coord,
     @SerializedName("weather") val weather: ArrayList<Weather>,
     @SerializedName("base") val base: String,

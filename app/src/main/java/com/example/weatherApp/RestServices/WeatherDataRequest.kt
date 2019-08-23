@@ -1,8 +1,9 @@
 package com.example.weatherApp.RestServices
 
+import androidx.core.util.Consumer
 import com.example.weatherApp.dataBase.CurrentWeather
 import com.example.weatherApp.dataBase.DailyWeather
-import com.example.weatherApp.dataBase.FiveDayWeather
+import com.example.weatherApp.dataBase.ForecastForDay
 import com.example.weatherApp.dataBase.HourlyWeather
 import com.google.gson.Gson
 import io.realm.Realm
@@ -11,7 +12,6 @@ import okhttp3.*
 import java.io.IOException
 import java.text.SimpleDateFormat
 import java.util.*
-import java.util.function.IntConsumer
 import kotlin.collections.HashSet
 
 class WeatherDataRequest {
@@ -19,7 +19,7 @@ class WeatherDataRequest {
     private val forecastApiUrl = "https://api.openweathermap.org/data/2.5/forecast?"
     private val currentApiUrl = "https://api.openweathermap.org/data/2.5/weather?"
 
-    fun getWeatherDataFor5Day(locality: String?, consumer: IntConsumer) {
+    fun getDailyWeather(locality: String?, requestStatusConsumer: Consumer<RequestStatus>) {
         val client = OkHttpClient.Builder().build()
         val request = Request.Builder()
             .url(
@@ -33,15 +33,16 @@ class WeatherDataRequest {
             .build()
         client.newCall(request).enqueue(object : Callback {
             override fun onFailure(call: Call, e: IOException) {
-                consumer.accept(0)
+                requestStatusConsumer.accept(RequestStatus.ERROR)
             }
 
             override fun onResponse(call: Call, response: Response) {
                 try {
-                    val result = parseJson<DataParseClassFor5Day>(response.body!!.string())
+                    val result = parseJson<DataParseClassForDailyWeather>(response.body!!.string())
                     saveFiveDayWeather(result)
-                    consumer.accept(1)
+                    requestStatusConsumer.accept(RequestStatus.SUCCESSFULLY)
                 } catch (e: Exception) {
+                    requestStatusConsumer.accept(RequestStatus.ERROR)
                 }
             }
         })
@@ -52,7 +53,7 @@ class WeatherDataRequest {
         return gson.fromJson(json, T::class.java)
     }
 
-    fun getCurrentWeather(locality: String?, consumer: IntConsumer) {
+    fun getCurrentWeather(locality: String?, requestStatusConsumer: Consumer<RequestStatus>) {
         val client = OkHttpClient.Builder().build()
         val request = Request.Builder()
             .url(
@@ -66,18 +67,23 @@ class WeatherDataRequest {
             .build()
         client.newCall(request).enqueue(object : Callback {
             override fun onFailure(call: Call, e: IOException) {
-                consumer.accept(0)
+                requestStatusConsumer.accept(RequestStatus.ERROR)
             }
 
             override fun onResponse(call: Call, response: Response) {
-                val result = parseJson<DataParseClassForCurrentDay>(response.body!!.string())
-                saveCurrentWeather(result)
-                consumer.accept(1)
+                try {
+                    val result = parseJson<DataParseClassForCurrentWeather>(response.body!!.string())
+                    saveCurrentWeather(result)
+                    requestStatusConsumer.accept(RequestStatus.SUCCESSFULLY)
+                } catch (e: Exception) {
+                    requestStatusConsumer.accept(RequestStatus.ERROR)
+                }
+
             }
         })
     }
 
-    private fun saveCurrentWeather(data: DataParseClassForCurrentDay) {
+    private fun saveCurrentWeather(data: DataParseClassForCurrentWeather) {
         val realm = Realm.getDefaultInstance()
         realm.beginTransaction()
         val currentWeather = realm.createObject(CurrentWeather::class.java)
@@ -98,44 +104,47 @@ class WeatherDataRequest {
 
     }
 
-    private fun saveFiveDayWeather(data: DataParseClassFor5Day) {
+    private fun saveFiveDayWeather(data: DataParseClassForDailyWeather) {
         val realm = Realm.getDefaultInstance()
         realm.beginTransaction()
-        val fiveDayWeather = realm.createObject(FiveDayWeather::class.java)
-        fiveDayWeather.cityName = data.city.name
-        fiveDayWeather.dailyWeather = parseHourlyWeather(data.list)
+        val dailyWeather = realm.createObject(DailyWeather::class.java)
+        dailyWeather.cityName = data.city.name
+        dailyWeather.forecastForDay = parseForecastWeather(data.list)
         realm.commitTransaction()
     }
 
-    private fun parseHourlyWeather(hourlyWeather: List<DataParseClassFor5Day.List>): RealmList<DailyWeather> {
+    private fun parseForecastWeather(hourlyWeather: List<DataParseClassForDailyWeather.List>): RealmList<ForecastForDay> {
         val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.ROOT)
         val realm = Realm.getDefaultInstance()
-        val dateSet = HashSet<Date>()
+        val dateSet = HashSet<Date?>()
         for (item in hourlyWeather) {
             dateSet.add(sdf.parse(item.dt_txt))
         }
 
-        val result = RealmList<DailyWeather>()
+        val forecastForDayRealmList = RealmList<ForecastForDay>()
         for (date in dateSet) {
-            val dw = realm.createObject(DailyWeather::class.java)
-            dw.date = date
+            if (date == null) {
+                continue
+            }
+            val forecastForDayRealm = realm.createObject(ForecastForDay::class.java)
+            forecastForDayRealm.date = date
             for (item in hourlyWeather) {
                 if (date.compareTo(sdf.parse(item.dt_txt)) == 0) {
-                    val hw = realm.createObject(HourlyWeather::class.java)
+                    val hourlyWeatherRealm = realm.createObject(HourlyWeather::class.java)
                     if (!item.weather.isNullOrEmpty()) {
-                        hw.description = item.weather[0].description
-                        hw.icon = item.weather[0].icon
+                        hourlyWeatherRealm.description = item.weather[0].description
+                        hourlyWeatherRealm.icon = item.weather[0].icon
                     }
-                    hw.dt = item.dt
-                    hw.humidity = item.main.humidity
-                    hw.pressure = item.main.pressure
-                    hw.temp = item.main.temp
-                    hw.windSpeed = item.wind.speed
-                    dw.hourlyWeatherList.add(hw)
+                    hourlyWeatherRealm.dt = item.dt
+                    hourlyWeatherRealm.humidity = item.main.humidity
+                    hourlyWeatherRealm.pressure = item.main.pressure
+                    hourlyWeatherRealm.temp = item.main.temp
+                    hourlyWeatherRealm.windSpeed = item.wind.speed
+                    forecastForDayRealm.hourlyWeather.add(hourlyWeatherRealm)
                 }
             }
-            result.add(dw)
+            forecastForDayRealmList.add(forecastForDayRealm)
         }
-        return result
+        return forecastForDayRealmList
     }
 }

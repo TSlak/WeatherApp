@@ -5,7 +5,7 @@ import kotlinx.serialization.Serializable
 
 
 @Serializable
-data class DataParseClassFor5Day(
+data class DataParseClassForDailyWeather(
     @SerializedName("cod") val cod: Int,
     @SerializedName("message") val message: Double,
     @SerializedName("cnt") val cnt: Int,

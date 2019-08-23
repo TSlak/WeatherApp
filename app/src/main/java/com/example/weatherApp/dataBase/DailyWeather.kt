@@ -6,9 +6,9 @@ import java.text.SimpleDateFormat
 import java.util.*
 
 
-open class FiveDayWeather : RealmObject() {
+open class DailyWeather : RealmObject() {
     var cityName: String? = null
-    var dailyWeather : RealmList<DailyWeather> = RealmList()
+    var forecastForDay : RealmList<ForecastForDay> = RealmList()
     var date: Date = Date()
 }
 
@@ -26,7 +26,7 @@ open class HourlyWeather : RealmObject() {
     }
 }
 
-open class DailyWeather : RealmObject() {
+open class ForecastForDay : RealmObject() {
     var date: Date? = null
-    var hourlyWeatherList: RealmList<HourlyWeather> = RealmList()
+    var hourlyWeather: RealmList<HourlyWeather> = RealmList()
 }
