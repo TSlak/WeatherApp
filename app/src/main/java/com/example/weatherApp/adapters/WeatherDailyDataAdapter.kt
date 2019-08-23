@@ -1,4 +1,4 @@
-package com.example.weatherApp
+package com.example.weatherApp.adapters
 
 import android.content.Context
 import android.view.LayoutInflater
@@ -7,6 +7,7 @@ import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
+import com.example.weatherApp.R
 import com.example.weatherApp.dataBase.ForecastForDay
 import com.example.weatherApp.dataBase.HourlyWeather
 import com.example.weatherApp.helper.IconHelper

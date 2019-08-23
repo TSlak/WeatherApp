@@ -5,15 +5,22 @@ import android.view.View
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.util.Consumer
+import androidx.core.view.GravityCompat
+import androidx.drawerlayout.widget.DrawerLayout
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+import com.example.weatherApp.RestServices.CityNameTranslateRequest
 import com.example.weatherApp.RestServices.RequestStatus
 import com.example.weatherApp.RestServices.WeatherDataRequest
+import com.example.weatherApp.adapters.SavedCityDataAdapter
+import com.example.weatherApp.adapters.WeatherDailyDataAdapter
 import com.example.weatherApp.dataBase.CurrentWeather
 import com.example.weatherApp.dataBase.DailyWeather
+import com.example.weatherApp.dataBase.UserCity
 import com.example.weatherApp.helper.IconHelper
 import io.realm.Realm
 import io.realm.Sort
 import kotlinx.android.synthetic.main.activity_main.*
+import kotlinx.android.synthetic.main.city_saved_item.view.*
 import kotlinx.android.synthetic.main.weather_dayli_item.view.*
 import java.text.SimpleDateFormat
 import java.util.*
@@ -29,6 +36,22 @@ class MainActivity : AppCompatActivity(), SwipeRefreshLayout.OnRefreshListener {
         swipeRefreshLayout.setOnRefreshListener(this)
         showCurrentWeather()
         refreshWeatherData()
+        initSavedCity()
+    }
+
+    private fun initSavedCity() {
+        this.runOnUiThread {
+            val realm = Realm.getDefaultInstance()
+            val e = realm.where(UserCity::class.java).findAll()
+            val adapter = SavedCityDataAdapter(this, e)
+            cityRecyclerView.adapter = adapter
+            adapter.setOnItemClickListener(object : SavedCityDataAdapter.ClickListener {
+                override fun onItemClick(position: Int, v: View) {
+                    test(v.cityNameTV.text.toString())
+                }
+            })
+        }
+
     }
 
     override fun onRefresh() {
@@ -36,10 +59,11 @@ class MainActivity : AppCompatActivity(), SwipeRefreshLayout.OnRefreshListener {
         refreshWeatherData()
     }
 
+
     private fun refreshWeatherData() {
         Toast.makeText(this, R.string.refresh_weather, Toast.LENGTH_LONG).show()
-        val wfd = WeatherDataRequest()
-        wfd.getCurrentWeather(null, Consumer { requestStatus ->
+        val dataRequest = WeatherDataRequest()
+        dataRequest.getCurrentWeather(null, Consumer { requestStatus ->
             this.runOnUiThread {
                 when (requestStatus) {
                     RequestStatus.ERROR -> {
@@ -56,7 +80,7 @@ class MainActivity : AppCompatActivity(), SwipeRefreshLayout.OnRefreshListener {
             }
         })
 
-        wfd.getDailyWeather(null, Consumer { requestStatus ->
+        dataRequest.getDailyWeather(null, Consumer { requestStatus ->
             this.runOnUiThread {
                 when (requestStatus) {
                     null -> {
@@ -73,8 +97,9 @@ class MainActivity : AppCompatActivity(), SwipeRefreshLayout.OnRefreshListener {
         })
     }
 
-    private fun test(v: View) {
-        Toast.makeText(this, v.weekdayTV.text.toString(), Toast.LENGTH_SHORT).show()
+    private fun test(s: String) {
+        Toast.makeText(this, s, Toast.LENGTH_SHORT).show()
+        drawer_layout.closeDrawer(GravityCompat.START)
     }
 
     private fun showCurrentWeather() {
@@ -110,13 +135,29 @@ class MainActivity : AppCompatActivity(), SwipeRefreshLayout.OnRefreshListener {
             weatherRecyclerView.adapter = adapter
             adapter.setOnItemClickListener(object : WeatherDailyDataAdapter.ClickListener {
                 override fun onItemClick(position: Int, v: View) {
-                    test(v)
+                    test(v.weekdayTV.text.toString())
                 }
             })
 
             weatherRecyclerView.scheduleLayoutAnimation()
             swipeRefreshLayout.isRefreshing = false
         }
+    }
+
+    fun testCitySave(view: View) {
+        val dataRequest = CityNameTranslateRequest()
+        dataRequest.getTranslateText(cityNameET.text.toString(), Consumer { requestStatus ->
+            when (requestStatus) {
+                RequestStatus.SUCCESSFULLY -> initSavedCity()
+                RequestStatus.ERROR, null -> this.runOnUiThread({
+                    Toast.makeText(this, "Error", Toast.LENGTH_LONG).show()
+                })
+            }
+        })
+    }
+
+    fun openMenu(view: View) {
+        drawer_layout.openDrawer(nav_view, true)
     }
 
 
