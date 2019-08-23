@@ -158,6 +158,7 @@ class MainActivity : AppCompatActivity(), SwipeRefreshLayout.OnRefreshListener {
 
     fun openMenu(view: View) {
         drawer_layout.openDrawer(nav_view, true)
+
     }
 
 
