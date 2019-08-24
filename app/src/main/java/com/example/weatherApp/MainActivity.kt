@@ -88,6 +88,34 @@ class MainActivity : AppCompatActivity(), SwipeRefreshLayout.OnRefreshListener {
         })
     }
 
+    private fun refreshWeatherData(latitude: String, longitude: String) {
+        Toast.makeText(this, R.string.refresh_weather, Toast.LENGTH_LONG).show()
+        val dataRequest = WeatherDataRequest()
+        dataRequest.getCurrentWeather(latitude, longitude, Consumer { currentWeather ->
+            this.runOnUiThread {
+                if (currentWeather != null) {
+                    showCurrentWeather(currentWeather)
+                    RealmHelper.commitObject(currentWeather)
+                } else {
+                    Toast.makeText(this, R.string.error_connected_server, Toast.LENGTH_LONG).show()
+                    swipeRefreshLayout.isRefreshing = false
+                }
+            }
+        })
+
+        dataRequest.getDailyWeather(latitude, longitude, Consumer { dailyWeather ->
+            this.runOnUiThread {
+                if (dailyWeather != null) {
+                    showDailyWeather(dailyWeather)
+                    RealmHelper.commitObject(dailyWeather)
+                } else {
+                    Toast.makeText(this, R.string.error_connected_server, Toast.LENGTH_LONG).show()
+                    swipeRefreshLayout.isRefreshing = false
+                }
+            }
+        })
+    }
+
     private fun test(s: String) {
         Toast.makeText(this, s, Toast.LENGTH_SHORT).show()
 
@@ -95,27 +123,32 @@ class MainActivity : AppCompatActivity(), SwipeRefreshLayout.OnRefreshListener {
 
     private fun showCurrentWeather(weather: CurrentWeather) {
         this.runOnUiThread {
-            val e = weather
-            currentTempTV.text = e.temp.roundToInt().toString().plus(" ").plus(resources.getString(R.string.celsius))
-            windSpeedTV.text = e.windSpeed.toString().plus(" ").plus(resources.getString(R.string.wind_speed_unit))
-            sunriseTV.text = e.getSunriseTime()
-            sunsetTV.text = e.getSunsetTime()
-            humidityTV.text = e.humidity.toString().plus("%")
-            descriptionTV.text = e.description
-            pressureTV.text = e.pressure.toString().plus(" ").plus(resources.getString(R.string.pressure_unit))
-            weatherImageView.setImageResource(IconHelper.getWeatherImageId(e.icon))
-            localityTV.text = e.cityName
+            currentTempTV.text = weather.temp.roundToInt().toString()
+                .plus(" ")
+                .plus(resources.getString(R.string.celsius))
+            windSpeedTV.text =
+                weather.windSpeed.toString()
+                    .plus(" ")
+                    .plus(resources.getString(R.string.wind_speed_unit))
+            sunriseTV.text = weather.getSunriseTime()
+            sunsetTV.text = weather.getSunsetTime()
+            humidityTV.text = weather.humidity.toString().plus("%")
+            descriptionTV.text = weather.description
+            pressureTV.text = weather.pressure.toString()
+                .plus(" ")
+                .plus(resources.getString(R.string.pressure_unit))
+            weatherImageView.setImageResource(IconHelper.getWeatherImageId(weather.icon))
+            localityTV.text = weather.cityName
             updateDateTimeTV.text = resources.getString(R.string.last_update)
                 .plus(" ")
-                .plus(currentDaySdf.format(e.date))
+                .plus(currentDaySdf.format(weather.date))
                 .plus(" | ")
-                .plus(currentTimeSdf.format(e.date))
+                .plus(currentTimeSdf.format(weather.date))
         }
     }
 
     private fun showDailyWeather(dailyWeather: DailyWeather) {
-        val e = dailyWeather
-        val adapter = DailyWeatherDataAdapter(this, e.forecastForDay
+        val adapter = DailyWeatherDataAdapter(this, dailyWeather.forecastForDay
             .toList()
             .sortedBy { forecastForDay -> forecastForDay.date })
         weatherRecyclerView.adapter = adapter
