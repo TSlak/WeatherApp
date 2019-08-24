@@ -66,7 +66,7 @@
 
             </androidx.constraintlayout.widget.ConstraintLayout>
             <androidx.recyclerview.widget.RecyclerView
-                    android:layout_width="0dp"
+                    android:layout_width="match_parent"
                     android:layout_height="150dp"
                     app:layoutManager="LinearLayoutManager"
                     android:id="@+id/weatherRecyclerView"
@@ -220,7 +220,7 @@
                                                            android:layout_height="match_parent">
             <Button android:id="@+id/currentPlace" android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="current place"
+                    android:text="current location"
                     app:layout_constraintTop_toTopOf="parent"/>
             <androidx.recyclerview.widget.RecyclerView
                     android:layout_width="match_parent"
@@ -246,7 +246,7 @@
                     android:layout_height="wrap_content" android:id="@+id/button"
                     app:layout_constraintBottom_toBottomOf="parent" app:layout_constraintEnd_toEndOf="parent"
                     android:layout_marginEnd="8dp" app:layout_constraintStart_toEndOf="@+id/cityNameET"
-                    android:onClick="testCitySave"
+                    android:onClick="saveUserCity"
                     android:layout_marginStart="8dp"/>
         </androidx.constraintlayout.widget.ConstraintLayout>
 

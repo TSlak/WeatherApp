@@ -1,29 +1,29 @@
 package com.example.weatherApp
 
+import android.app.Activity
 import android.os.Bundle
 import android.view.View
+import android.view.inputmethod.InputMethodManager
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.util.Consumer
 import androidx.core.view.GravityCompat
-import androidx.drawerlayout.widget.DrawerLayout
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import com.example.weatherApp.RestServices.CityNameTranslateRequest
-import com.example.weatherApp.RestServices.RequestStatus
 import com.example.weatherApp.RestServices.WeatherDataRequest
+import com.example.weatherApp.adapters.DailyWeatherDataAdapter
 import com.example.weatherApp.adapters.SavedCityDataAdapter
-import com.example.weatherApp.adapters.WeatherDailyDataAdapter
 import com.example.weatherApp.dataBase.CurrentWeather
 import com.example.weatherApp.dataBase.DailyWeather
 import com.example.weatherApp.dataBase.UserCity
 import com.example.weatherApp.helper.IconHelper
+import com.example.weatherApp.helper.RealmHelper
 import io.realm.Realm
-import io.realm.Sort
 import kotlinx.android.synthetic.main.activity_main.*
-import kotlinx.android.synthetic.main.city_saved_item.view.*
 import kotlinx.android.synthetic.main.weather_dayli_item.view.*
 import java.text.SimpleDateFormat
 import java.util.*
+import kotlin.math.roundToInt
 
 
 class MainActivity : AppCompatActivity(), SwipeRefreshLayout.OnRefreshListener {
@@ -34,8 +34,8 @@ class MainActivity : AppCompatActivity(), SwipeRefreshLayout.OnRefreshListener {
         setContentView(R.layout.activity_main)
         Realm.init(this)
         swipeRefreshLayout.setOnRefreshListener(this)
-        showCurrentWeather()
-        refreshWeatherData()
+//        showCurrentWeather()
+        refreshWeatherData("Makhachkala")
         initSavedCity()
     }
 
@@ -47,51 +47,42 @@ class MainActivity : AppCompatActivity(), SwipeRefreshLayout.OnRefreshListener {
             cityRecyclerView.adapter = adapter
             adapter.setOnItemClickListener(object : SavedCityDataAdapter.ClickListener {
                 override fun onItemClick(position: Int, v: View) {
-                    test(v.cityNameTV.text.toString())
+                    refreshWeatherData(e[position]!!.cityNameEn)
+                    drawer_layout.closeDrawer(GravityCompat.START)
                 }
             })
         }
-
     }
 
     override fun onRefresh() {
         swipeRefreshLayout.isRefreshing = true
-        refreshWeatherData()
+        refreshWeatherData(localityTV.text.toString())
     }
 
 
-    private fun refreshWeatherData() {
+    private fun refreshWeatherData(locality: String) {
         Toast.makeText(this, R.string.refresh_weather, Toast.LENGTH_LONG).show()
         val dataRequest = WeatherDataRequest()
-        dataRequest.getCurrentWeather(null, Consumer { requestStatus ->
+        dataRequest.getCurrentWeather(locality, Consumer { currentWeather ->
             this.runOnUiThread {
-                when (requestStatus) {
-                    RequestStatus.ERROR -> {
-                        Toast.makeText(this, R.string.error_connected_server, Toast.LENGTH_LONG).show()
-                        swipeRefreshLayout.isRefreshing = false
-                    }
-                    RequestStatus.SUCCESSFULLY -> {
-                        showCurrentWeather()
-                    }
-                    null -> {
-                    }
-
+                if (currentWeather != null) {
+                    showCurrentWeather(currentWeather)
+                    RealmHelper.commitObject(currentWeather)
+                } else {
+                    Toast.makeText(this, R.string.error_connected_server, Toast.LENGTH_LONG).show()
+                    swipeRefreshLayout.isRefreshing = false
                 }
             }
         })
 
-        dataRequest.getDailyWeather(null, Consumer { requestStatus ->
+        dataRequest.getDailyWeather(locality, Consumer { dailyWeather ->
             this.runOnUiThread {
-                when (requestStatus) {
-                    null -> {
-                    }
-                    RequestStatus.ERROR -> {
-                        Toast.makeText(this, R.string.error_connected_server, Toast.LENGTH_LONG).show()
-                        swipeRefreshLayout.isRefreshing = false
-                    }
-                    RequestStatus.SUCCESSFULLY -> {
-                        showDailyWeather()
-                    }
+                if (dailyWeather != null) {
+                    showDailyWeather(dailyWeather)
+                    RealmHelper.commitObject(dailyWeather)
+                } else {
+                    Toast.makeText(this, R.string.error_connected_server, Toast.LENGTH_LONG).show()
+                    swipeRefreshLayout.isRefreshing = false
                 }
             }
         })
@@ -99,66 +90,101 @@ class MainActivity : AppCompatActivity(), SwipeRefreshLayout.OnRefreshListener {
 
     private fun test(s: String) {
         Toast.makeText(this, s, Toast.LENGTH_SHORT).show()
-        drawer_layout.closeDrawer(GravityCompat.START)
+
     }
 
-    private fun showCurrentWeather() {
+    private fun showCurrentWeather(weather: CurrentWeather) {
         this.runOnUiThread {
-            val realm = Realm.getDefaultInstance()
-            val e = realm.where(CurrentWeather::class.java)
-                .sort("date", Sort.DESCENDING)
-                .findFirst()
-            if (e != null) {
-                currentTempTV.text = e.temp.toString().plus(" ").plus(resources.getString(R.string.celsius))
-                windSpeedTV.text = e.windSpeed.toString().plus(" ").plus(resources.getString(R.string.wind_speed_unit))
-                sunriseTV.text = e.getSunriseTime()
-                sunsetTV.text = e.getSunsetTime()
-                humidityTV.text = e.humidity.toString().plus("%")
-                descriptionTV.text = e.description
-                pressureTV.text = e.pressure.toString().plus(" ").plus(resources.getString(R.string.pressure_unit))
-                weatherImageView.setImageResource(IconHelper.getWeatherImageId(e.icon))
-                localityTV.text = e.cityName
-                updateDateTimeTV.text = resources.getString(R.string.last_update)
-                    .plus(" ")
-                    .plus(currentDaySdf.format(e.date))
-                    .plus(" | ")
-                    .plus(currentTimeSdf.format(e.date))
-            }
+            val e = weather
+            currentTempTV.text = e.temp.roundToInt().toString().plus(" ").plus(resources.getString(R.string.celsius))
+            windSpeedTV.text = e.windSpeed.toString().plus(" ").plus(resources.getString(R.string.wind_speed_unit))
+            sunriseTV.text = e.getSunriseTime()
+            sunsetTV.text = e.getSunsetTime()
+            humidityTV.text = e.humidity.toString().plus("%")
+            descriptionTV.text = e.description
+            pressureTV.text = e.pressure.toString().plus(" ").plus(resources.getString(R.string.pressure_unit))
+            weatherImageView.setImageResource(IconHelper.getWeatherImageId(e.icon))
+            localityTV.text = e.cityName
+            updateDateTimeTV.text = resources.getString(R.string.last_update)
+                .plus(" ")
+                .plus(currentDaySdf.format(e.date))
+                .plus(" | ")
+                .plus(currentTimeSdf.format(e.date))
         }
     }
 
-    private fun showDailyWeather() {
+    private fun showDailyWeather(dailyWeather: DailyWeather) {
+        val e = dailyWeather
+        val adapter = DailyWeatherDataAdapter(this, e.forecastForDay
+            .toList()
+            .sortedBy { forecastForDay -> forecastForDay.date })
+        weatherRecyclerView.adapter = adapter
+        adapter.setOnItemClickListener(object : DailyWeatherDataAdapter.ClickListener {
+            override fun onItemClick(position: Int, v: View) {
+                test(v.weekdayTV.text.toString())
+            }
+        })
+        weatherRecyclerView.scheduleLayoutAnimation()
+        swipeRefreshLayout.isRefreshing = false
+    }
+
+    fun saveUserCity(view: View) {
+        hideKeyboardFrom(this)
+        val cityName = cityNameET.text.toString()
+        if (cityName.isEmpty()) {
+            return
+        }
         val realm = Realm.getDefaultInstance()
-        val e = realm.where(DailyWeather::class.java).findFirst()
-        if (e != null) {
-            val adapter = WeatherDailyDataAdapter(this, e.forecastForDay.sort("date"))
-            weatherRecyclerView.adapter = adapter
-            adapter.setOnItemClickListener(object : WeatherDailyDataAdapter.ClickListener {
-                override fun onItemClick(position: Int, v: View) {
-                    test(v.weekdayTV.text.toString())
-                }
-            })
-
-            weatherRecyclerView.scheduleLayoutAnimation()
-            swipeRefreshLayout.isRefreshing = false
+        val hasCity = realm.where(UserCity::class.java)
+            .equalTo("cityNameEn", cityName)
+            .or()
+            .equalTo("cityName", cityName)
+            .findFirst()
+        if (hasCity != null) {
+            Toast.makeText(this, "Данный город уже добавлен", Toast.LENGTH_LONG).show()
+            return
         }
+        val dataRequest = CityNameTranslateRequest()
+        dataRequest.getTranslateText(cityNameET.text.toString(), Consumer { userCity ->
+            this.runOnUiThread {
+                if (userCity != null) {
+                    initCityCurrentTemp(userCity)
+                } else {
+                    Toast.makeText(this, "Error", Toast.LENGTH_LONG).show()
+                }
+            }
+
+        })
     }
 
-    fun testCitySave(view: View) {
-        val dataRequest = CityNameTranslateRequest()
-        dataRequest.getTranslateText(cityNameET.text.toString(), Consumer { requestStatus ->
-            when (requestStatus) {
-                RequestStatus.SUCCESSFULLY -> initSavedCity()
-                RequestStatus.ERROR, null -> this.runOnUiThread({
-                    Toast.makeText(this, "Error", Toast.LENGTH_LONG).show()
-                })
+    private fun initCityCurrentTemp(userCity: UserCity) {
+        val wdr = WeatherDataRequest()
+        wdr.getCurrentWeather(userCity.cityNameEn, Consumer { currentWeather ->
+            this.runOnUiThread {
+                if (currentWeather != null) {
+                    userCity.currentWeatherTemp = currentWeather.temp.roundToInt()
+                    userCity.weatherIcon = currentWeather.icon
+                    RealmHelper.commitObject(userCity)
+                    initSavedCity()
+                } else {
+                    Toast.makeText(this, "Город не найден, попробуйте позднее или измените запрос", Toast.LENGTH_LONG)
+                        .show()
+                }
             }
+
         })
     }
 
     fun openMenu(view: View) {
         drawer_layout.openDrawer(nav_view, true)
+    }
 
+    private fun hideKeyboardFrom(activity: Activity) {
+        val view = activity.currentFocus
+        if (view != null) {
+            val imm = this.getSystemService(Activity.INPUT_METHOD_SERVICE) as InputMethodManager
+            imm.hideSoftInputFromWindow(view.windowToken, 0)
+        }
     }
 
 

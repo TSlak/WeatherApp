@@ -19,12 +19,13 @@ class WeatherDataRequest {
     private val forecastApiUrl = "https://api.openweathermap.org/data/2.5/forecast?"
     private val currentApiUrl = "https://api.openweathermap.org/data/2.5/weather?"
 
-    fun getDailyWeather(locality: String?, requestStatusConsumer: Consumer<RequestStatus>) {
+    fun getDailyWeather(locality: String?, requestStatusConsumer: Consumer<DailyWeather>) {
         val client = OkHttpClient.Builder().build()
         val request = Request.Builder()
             .url(
                 forecastApiUrl
-                    .plus("q=Makhachkala,ru")
+                    .plus("q=")
+                    .plus(locality)
                     .plus("&appid=")
                     .plus(apiKey)
                     .plus("&units=metric")
@@ -33,16 +34,15 @@ class WeatherDataRequest {
             .build()
         client.newCall(request).enqueue(object : Callback {
             override fun onFailure(call: Call, e: IOException) {
-                requestStatusConsumer.accept(RequestStatus.ERROR)
+                requestStatusConsumer.accept(null)
             }
 
             override fun onResponse(call: Call, response: Response) {
                 try {
                     val result = parseJson<DataParseClassForDailyWeather>(response.body!!.string())
-                    saveFiveDayWeather(result)
-                    requestStatusConsumer.accept(RequestStatus.SUCCESSFULLY)
+                    requestStatusConsumer.accept(saveDailyWeather(result))
                 } catch (e: Exception) {
-                    requestStatusConsumer.accept(RequestStatus.ERROR)
+                    requestStatusConsumer.accept(null)
                 }
             }
         })
@@ -53,12 +53,13 @@ class WeatherDataRequest {
         return gson.fromJson(json, T::class.java)
     }
 
-    fun getCurrentWeather(locality: String?, requestStatusConsumer: Consumer<RequestStatus>) {
+    fun getCurrentWeather(locality: String?, currentWeather: Consumer<CurrentWeather>) {
         val client = OkHttpClient.Builder().build()
         val request = Request.Builder()
             .url(
                 currentApiUrl
-                    .plus("q=Makhachkala,ru")
+                    .plus("q=")
+                    .plus(locality)
                     .plus("&appid=")
                     .plus(apiKey)
                     .plus("&units=metric")
@@ -67,26 +68,24 @@ class WeatherDataRequest {
             .build()
         client.newCall(request).enqueue(object : Callback {
             override fun onFailure(call: Call, e: IOException) {
-                requestStatusConsumer.accept(RequestStatus.ERROR)
+                currentWeather.accept(null)
             }
 
             override fun onResponse(call: Call, response: Response) {
                 try {
                     val result = parseJson<DataParseClassForCurrentWeather>(response.body!!.string())
-                    saveCurrentWeather(result)
-                    requestStatusConsumer.accept(RequestStatus.SUCCESSFULLY)
-                } catch (e: Exception) {
-                    requestStatusConsumer.accept(RequestStatus.ERROR)
+                    currentWeather.accept(saveCurrentWeather(result))
+                } catch (e: NullPointerException) {
+                    currentWeather.accept(null)
                 }
-
             }
         })
     }
 
-    private fun saveCurrentWeather(data: DataParseClassForCurrentWeather) {
-        val realm = Realm.getDefaultInstance()
-        realm.beginTransaction()
-        val currentWeather = realm.createObject(CurrentWeather::class.java)
+    private fun saveCurrentWeather(data: DataParseClassForCurrentWeather): CurrentWeather? {
+//        val realm = Realm.getDefaultInstance()
+//        realm.beginTransaction()
+        val currentWeather = CurrentWeather()
         currentWeather.temp = data.main.temp
         currentWeather.cityName = data.name
         currentWeather.maxTemp = data.main.temp_max
@@ -100,17 +99,19 @@ class WeatherDataRequest {
         }
         currentWeather.humidity = data.main.humidity
         currentWeather.pressure = data.main.pressure
-        realm.commitTransaction()
-
+        return currentWeather
+//        realm.commitTransaction()
+//        return realm.copyFromRealm(currentWeather)
     }
 
-    private fun saveFiveDayWeather(data: DataParseClassForDailyWeather) {
+    private fun saveDailyWeather(data: DataParseClassForDailyWeather): DailyWeather {
         val realm = Realm.getDefaultInstance()
         realm.beginTransaction()
         val dailyWeather = realm.createObject(DailyWeather::class.java)
         dailyWeather.cityName = data.city.name
         dailyWeather.forecastForDay = parseForecastWeather(data.list)
         realm.commitTransaction()
+        return realm.copyFromRealm(dailyWeather)
     }
 
     private fun parseForecastWeather(hourlyWeather: List<DataParseClassForDailyWeather.List>): RealmList<ForecastForDay> {

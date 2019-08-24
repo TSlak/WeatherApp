@@ -13,13 +13,14 @@ import com.example.weatherApp.dataBase.HourlyWeather
 import com.example.weatherApp.helper.IconHelper
 import java.text.SimpleDateFormat
 import java.util.*
+import kotlin.math.roundToInt
 
 
-class WeatherDailyDataAdapter(context: Context, var forecastForDayList: List<ForecastForDay>) :
-    RecyclerView.Adapter<WeatherDailyDataAdapter.ViewHolder>() {
+class DailyWeatherDataAdapter(context: Context, var forecastForDayList: List<ForecastForDay>) :
+    RecyclerView.Adapter<DailyWeatherDataAdapter.ViewHolder>() {
     private var clickListener: ClickListener? = null
     var inflater = LayoutInflater.from(context)
-    val sdf = SimpleDateFormat("dd:MM", Locale.ROOT)
+    val sdf = SimpleDateFormat("dd.MM", Locale.ROOT)
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         val view = inflater.inflate(R.layout.weather_dayli_item, parent, false)
         return ViewHolder(view)
@@ -31,11 +32,11 @@ class WeatherDailyDataAdapter(context: Context, var forecastForDayList: List<For
         val hourlyWeatherTemp = dailyWeather.hourlyWeather
             .map(HourlyWeather::temp)
         holder.weekdayTV.text = sdf.format(dailyWeather.date)
-        holder.temperatureTV.text = hourlyWeatherTemp.max()
+        holder.temperatureTV.text = hourlyWeatherTemp.max()!!.roundToInt()
             .toString()
-            .plus(" ℃")
-            .plus("\n")
-            .plus(hourlyWeatherTemp.min())
+            .plus(" - ")
+//            .plus("\n")
+            .plus(hourlyWeatherTemp.min()!!.roundToInt().toString())
             .plus(" ℃")
     }
 
