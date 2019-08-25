@@ -35,19 +35,29 @@ class MainActivity : AppCompatActivity(), SwipeRefreshLayout.OnRefreshListener {
         Realm.init(this)
         swipeRefreshLayout.setOnRefreshListener(this)
 //        showCurrentWeather()
-        refreshWeatherData("Makhachkala")
+        refreshCurrentWeatherData("Makhachkala")
+//        refreshSavedCityWeather()
         initSavedCity()
+    }
+
+    private fun refreshSavedCityWeather() {
+        val realm = Realm.getDefaultInstance()
+        val cityList = realm.where(UserCity::class.java).findAll()
+        cityList.forEach({
+            initCityCurrentWeather(it)
+        })
     }
 
     private fun initSavedCity() {
         this.runOnUiThread {
             val realm = Realm.getDefaultInstance()
-            val e = realm.where(UserCity::class.java).findAll()
-            val adapter = SavedCityDataAdapter(this, e)
+            val cityList = realm.where(UserCity::class.java).findAll()
+            val adapter = SavedCityDataAdapter(this, cityList)
             cityRecyclerView.adapter = adapter
             adapter.setOnItemClickListener(object : SavedCityDataAdapter.ClickListener {
                 override fun onItemClick(position: Int, v: View) {
-                    refreshWeatherData(e[position]!!.cityNameEn)
+                    showCurrentWeather(cityList[position]!!.currentWeather!!)
+                    showDailyWeather(cityList[position]!!.dailyWeather!!)
                     drawer_layout.closeDrawer(GravityCompat.START)
                 }
             })
@@ -56,14 +66,14 @@ class MainActivity : AppCompatActivity(), SwipeRefreshLayout.OnRefreshListener {
 
     override fun onRefresh() {
         swipeRefreshLayout.isRefreshing = true
-        refreshWeatherData(localityTV.text.toString())
+        refreshCurrentWeatherData(localityTV.text.toString())
+        refreshDailyWeatherData(localityTV.text.toString())
     }
 
 
-    private fun refreshWeatherData(locality: String) {
+    private fun refreshCurrentWeatherData(locality: String) {
         Toast.makeText(this, R.string.refresh_weather, Toast.LENGTH_LONG).show()
-        val dataRequest = WeatherDataRequest()
-        dataRequest.getCurrentWeather(locality, Consumer { currentWeather ->
+        WeatherDataRequest.getCurrentWeather(locality, Consumer { currentWeather ->
             this.runOnUiThread {
                 if (currentWeather != null) {
                     showCurrentWeather(currentWeather)
@@ -75,11 +85,14 @@ class MainActivity : AppCompatActivity(), SwipeRefreshLayout.OnRefreshListener {
             }
         })
 
-        dataRequest.getDailyWeather(locality, Consumer { dailyWeather ->
+
+    }
+
+    private fun refreshDailyWeatherData(locality: String) {
+        WeatherDataRequest.getDailyWeather(locality, Consumer { dailyWeather ->
             this.runOnUiThread {
                 if (dailyWeather != null) {
                     showDailyWeather(dailyWeather)
-                    RealmHelper.commitObject(dailyWeather)
                 } else {
                     Toast.makeText(this, R.string.error_connected_server, Toast.LENGTH_LONG).show()
                     swipeRefreshLayout.isRefreshing = false
@@ -88,10 +101,9 @@ class MainActivity : AppCompatActivity(), SwipeRefreshLayout.OnRefreshListener {
         })
     }
 
-    private fun refreshWeatherData(latitude: String, longitude: String) {
+    private fun refreshCurrentWeatherData(latitude: String, longitude: String) {
         Toast.makeText(this, R.string.refresh_weather, Toast.LENGTH_LONG).show()
-        val dataRequest = WeatherDataRequest()
-        dataRequest.getCurrentWeather(latitude, longitude, Consumer { currentWeather ->
+        WeatherDataRequest.getCurrentWeather(latitude, longitude, Consumer { currentWeather ->
             this.runOnUiThread {
                 if (currentWeather != null) {
                     showCurrentWeather(currentWeather)
@@ -103,7 +115,10 @@ class MainActivity : AppCompatActivity(), SwipeRefreshLayout.OnRefreshListener {
             }
         })
 
-        dataRequest.getDailyWeather(latitude, longitude, Consumer { dailyWeather ->
+    }
+
+    private fun refreshDailyWeatherData(latitude: String, longitude: String) {
+        WeatherDataRequest.getDailyWeather(latitude, longitude, Consumer { dailyWeather ->
             this.runOnUiThread {
                 if (dailyWeather != null) {
                     showDailyWeather(dailyWeather)
@@ -181,7 +196,7 @@ class MainActivity : AppCompatActivity(), SwipeRefreshLayout.OnRefreshListener {
         dataRequest.getTranslateText(cityNameET.text.toString(), Consumer { userCity ->
             this.runOnUiThread {
                 if (userCity != null) {
-                    initCityCurrentTemp(userCity)
+                    initCityCurrentWeather(userCity)
                 } else {
                     Toast.makeText(this, "Error", Toast.LENGTH_LONG).show()
                 }
@@ -190,13 +205,25 @@ class MainActivity : AppCompatActivity(), SwipeRefreshLayout.OnRefreshListener {
         })
     }
 
-    private fun initCityCurrentTemp(userCity: UserCity) {
-        val wdr = WeatherDataRequest()
-        wdr.getCurrentWeather(userCity.cityNameEn, Consumer { currentWeather ->
+    private fun initCityCurrentWeather(userCity: UserCity) {
+        WeatherDataRequest.getCurrentWeather(userCity.cityNameEn, Consumer { currentWeather ->
             this.runOnUiThread {
                 if (currentWeather != null) {
-                    userCity.currentWeatherTemp = currentWeather.temp.roundToInt()
-                    userCity.weatherIcon = currentWeather.icon
+                    userCity.currentWeather = currentWeather
+                    initCityDailyWeather(userCity)
+                } else {
+                    Toast.makeText(this, "Город не найден, попробуйте позднее или измените запрос", Toast.LENGTH_LONG)
+                        .show()
+                }
+            }
+        })
+    }
+
+    private fun initCityDailyWeather(userCity: UserCity) {
+        WeatherDataRequest.getDailyWeather(userCity.cityNameEn, Consumer { dailyWeather ->
+            this.runOnUiThread {
+                if (dailyWeather != null) {
+                    userCity.dailyWeather = dailyWeather
                     RealmHelper.commitObject(userCity)
                     initSavedCity()
                 } else {
@@ -204,7 +231,6 @@ class MainActivity : AppCompatActivity(), SwipeRefreshLayout.OnRefreshListener {
                         .show()
                 }
             }
-
         })
     }
 

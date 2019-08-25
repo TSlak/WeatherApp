@@ -25,8 +25,10 @@ class SavedCityDataAdapter(context: Context, var userCityList: List<UserCity>) :
         val realm = Realm.getDefaultInstance()
         val savedCity = realm.copyFromRealm(userCityList[position])
         holder.savedCityTV.text = savedCity.cityName
-        holder.tempTv.text = savedCity.currentWeatherTemp.toString().plus(" ℃")
-        holder.savedCityWeatherIcon.setImageResource(IconHelper.getWeatherImageId(savedCity.weatherIcon))
+        if (savedCity.currentWeather != null) {
+            holder.tempTv.text = savedCity.currentWeather!!.temp.toString().plus(" ℃")
+            holder.savedCityWeatherIcon.setImageResource(IconHelper.getWeatherImageId(savedCity.currentWeather!!.icon))
+        }
     }
 
     override fun getItemCount(): Int {

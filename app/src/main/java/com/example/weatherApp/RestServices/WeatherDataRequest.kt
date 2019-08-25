@@ -15,7 +15,7 @@ import java.util.*
 import kotlin.collections.HashSet
 import kotlin.math.roundToInt
 
-class WeatherDataRequest {
+object WeatherDataRequest {
     private val apiKey = "58be2a871e2354feae0f3ae5e39f99b3"
     private val forecastApiUrl = "https://api.openweathermap.org/data/2.5/forecast?"
     private val currentApiUrl = "https://api.openweathermap.org/data/2.5/weather?"
