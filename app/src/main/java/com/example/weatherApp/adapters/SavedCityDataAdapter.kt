@@ -11,6 +11,7 @@ import com.example.weatherApp.R
 import com.example.weatherApp.dataBase.UserCity
 import com.example.weatherApp.helper.IconHelper
 import io.realm.Realm
+import kotlin.math.roundToInt
 
 class SavedCityDataAdapter(context: Context, var userCityList: List<UserCity>) :
     RecyclerView.Adapter<SavedCityDataAdapter.ViewHolder>() {
@@ -26,8 +27,18 @@ class SavedCityDataAdapter(context: Context, var userCityList: List<UserCity>) :
         val savedCity = realm.copyFromRealm(userCityList[position])
         holder.savedCityTV.text = savedCity.cityName
         if (savedCity.currentWeather != null) {
-            holder.tempTv.text = savedCity.currentWeather!!.temp.toString().plus(" ℃")
+            holder.tempTv.text = savedCity.currentWeather!!.temp.roundToInt().toString()
+                .plus(" ")
+                .plus(inflater.context.getString(R.string.celsius))
             holder.savedCityWeatherIcon.setImageResource(IconHelper.getWeatherImageId(savedCity.currentWeather!!.icon))
+            holder.humidityTV.text = savedCity.currentWeather!!.humidity.toString()
+                .plus(" %")
+            holder.pressureTV.text = savedCity.currentWeather!!.pressure.toString()
+                .plus(" ")
+                .plus(inflater.context.getString(R.string.pressure_unit))
+            holder.windSpeedTV.text = savedCity.currentWeather!!.windSpeed.toString()
+                .plus(" ")
+                .plus(inflater.context.getString(R.string.wind_speed_unit))
         }
     }
 
@@ -43,7 +54,9 @@ class SavedCityDataAdapter(context: Context, var userCityList: List<UserCity>) :
         val savedCityTV: TextView = view.findViewById(R.id.cityNameTV)
         val tempTv: TextView = view.findViewById(R.id.tempTV)
         val savedCityWeatherIcon: ImageView = view.findViewById(R.id.savedCityWeatherIcon)
-
+        val pressureTV: TextView = view.findViewById(R.id.pressureTV)
+        val humidityTV: TextView = view.findViewById(R.id.humidityTV)
+        val windSpeedTV: TextView = view.findViewById(R.id.windSpeedTV)
 
         override fun onClick(v: View) {
             clickListener!!.onItemClick(adapterPosition, v)
