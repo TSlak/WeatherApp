@@ -1,6 +1,7 @@
 package com.example.weatherApp.dataBase
 
 import io.realm.RealmObject
+import io.realm.annotations.PrimaryKey
 import java.text.SimpleDateFormat
 import java.util.*
 

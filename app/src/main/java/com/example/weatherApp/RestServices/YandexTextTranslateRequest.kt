@@ -1,17 +1,16 @@
 package com.example.weatherApp.RestServices
 
 import androidx.core.util.Consumer
-import com.example.weatherApp.dataBase.UserCity
 import com.google.gson.Gson
 import okhttp3.*
 import java.io.IOException
 
 
-class CityNameTranslateRequest {
-    private val apiKey = "trnsl.1.1.20190823T173824Z.2154c335d330dcd2.370e9283b41d7795105f681524c3fa46ff669f0b"
-    private val apiUrl = "https://translate.yandex.net/api/v1.5/tr.json/translate?"
+object YandexTextTranslateRequest {
+    private const val  apiKey = "trnsl.1.1.20190823T173824Z.2154c335d330dcd2.370e9283b41d7795105f681524c3fa46ff669f0b"
+    private const val apiUrl = "https://translate.yandex.net/api/v1.5/tr.json/translate?"
 
-    fun getTranslateText(textToTranslate: String, resultTextConsumer: Consumer<UserCity>) {
+    fun getTranslateText(textToTranslate: String, resultTextConsumer: Consumer<String>) {
         val client = OkHttpClient.Builder().build()
         val request = Request.Builder()
             .url(
@@ -33,7 +32,7 @@ class CityNameTranslateRequest {
             override fun onResponse(call: Call, response: Response) {
                 try {
                     val result = parseJson<YandexTranslateData>(response.body!!.string())
-                    resultTextConsumer.accept(parseUserCity(result, textToTranslate))
+                    resultTextConsumer.accept(result.text[0])
                 } catch (e: Exception) {
                     resultTextConsumer.accept(null)
                 }
@@ -46,10 +45,4 @@ class CityNameTranslateRequest {
         return gson.fromJson(json, T::class.java)
     }
 
-    private fun parseUserCity(data: YandexTranslateData, textToTranslate: String): UserCity {
-        val userCity = UserCity()
-        userCity.cityNameEn = data.text[0]
-        userCity.cityName = textToTranslate
-        return userCity
-    }
 }

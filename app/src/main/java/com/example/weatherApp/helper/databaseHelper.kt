@@ -5,10 +5,10 @@ import io.realm.RealmObject
 import java.util.*
 
 object RealmHelper {
-    fun commitObject(objectToCommit: RealmObject) {
+    fun commitOrUpdateObject(objectToCommit: RealmObject) {
         val realm = Realm.getDefaultInstance()
         realm.beginTransaction()
-        realm.copyToRealm(objectToCommit)
+        realm.insertOrUpdate(objectToCommit)
         realm.commitTransaction()
     }
 

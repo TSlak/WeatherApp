@@ -1,6 +1,7 @@
 package com.example.weatherApp
 
 import android.app.Activity
+import android.content.Intent
 import android.os.Bundle
 import android.view.View
 import android.view.inputmethod.InputMethodManager
@@ -9,8 +10,8 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.util.Consumer
 import androidx.core.view.GravityCompat
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
-import com.example.weatherApp.RestServices.CityNameTranslateRequest
 import com.example.weatherApp.RestServices.WeatherDataRequest
+import com.example.weatherApp.RestServices.YandexTextTranslateRequest
 import com.example.weatherApp.adapters.DailyWeatherDataAdapter
 import com.example.weatherApp.adapters.SavedCityDataAdapter
 import com.example.weatherApp.dataBase.CurrentWeather
@@ -36,7 +37,8 @@ class MainActivity : AppCompatActivity(), SwipeRefreshLayout.OnRefreshListener {
         swipeRefreshLayout.setOnRefreshListener(this)
 //        showCurrentWeather()
         refreshCurrentWeatherData("Makhachkala")
-//        refreshSavedCityWeather()
+        refreshDailyWeatherData("Makhachkala")
+        refreshSavedCityWeather()
         initSavedCity()
     }
 
@@ -44,7 +46,7 @@ class MainActivity : AppCompatActivity(), SwipeRefreshLayout.OnRefreshListener {
         val realm = Realm.getDefaultInstance()
         val cityList = realm.where(UserCity::class.java).findAll()
         cityList.forEach({
-            initCityCurrentWeather(it)
+            initCityCurrentWeather(realm.copyFromRealm(it))
         })
     }
 
@@ -64,6 +66,11 @@ class MainActivity : AppCompatActivity(), SwipeRefreshLayout.OnRefreshListener {
         }
     }
 
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        Toast.makeText(this, "Вот сейчас", Toast.LENGTH_LONG).show()
+    }
+
     override fun onRefresh() {
         swipeRefreshLayout.isRefreshing = true
         refreshCurrentWeatherData(localityTV.text.toString())
@@ -77,7 +84,7 @@ class MainActivity : AppCompatActivity(), SwipeRefreshLayout.OnRefreshListener {
             this.runOnUiThread {
                 if (currentWeather != null) {
                     showCurrentWeather(currentWeather)
-                    RealmHelper.commitObject(currentWeather)
+                    RealmHelper.commitOrUpdateObject(currentWeather)
                 } else {
                     Toast.makeText(this, R.string.error_connected_server, Toast.LENGTH_LONG).show()
                     swipeRefreshLayout.isRefreshing = false
@@ -107,7 +114,7 @@ class MainActivity : AppCompatActivity(), SwipeRefreshLayout.OnRefreshListener {
             this.runOnUiThread {
                 if (currentWeather != null) {
                     showCurrentWeather(currentWeather)
-                    RealmHelper.commitObject(currentWeather)
+                    RealmHelper.commitOrUpdateObject(currentWeather)
                 } else {
                     Toast.makeText(this, R.string.error_connected_server, Toast.LENGTH_LONG).show()
                     swipeRefreshLayout.isRefreshing = false
@@ -122,7 +129,7 @@ class MainActivity : AppCompatActivity(), SwipeRefreshLayout.OnRefreshListener {
             this.runOnUiThread {
                 if (dailyWeather != null) {
                     showDailyWeather(dailyWeather)
-                    RealmHelper.commitObject(dailyWeather)
+                    RealmHelper.commitOrUpdateObject(dailyWeather)
                 } else {
                     Toast.makeText(this, R.string.error_connected_server, Toast.LENGTH_LONG).show()
                     swipeRefreshLayout.isRefreshing = false
@@ -192,10 +199,12 @@ class MainActivity : AppCompatActivity(), SwipeRefreshLayout.OnRefreshListener {
             Toast.makeText(this, "Данный город уже добавлен", Toast.LENGTH_LONG).show()
             return
         }
-        val dataRequest = CityNameTranslateRequest()
-        dataRequest.getTranslateText(cityNameET.text.toString(), Consumer { userCity ->
+        val userCity = UserCity()
+        YandexTextTranslateRequest.getTranslateText(cityName, Consumer { translateText ->
             this.runOnUiThread {
-                if (userCity != null) {
+                if (translateText != null) {
+                    userCity.cityNameEn = translateText
+                    userCity.cityName = cityName
                     initCityCurrentWeather(userCity)
                 } else {
                     Toast.makeText(this, "Error", Toast.LENGTH_LONG).show()
@@ -224,7 +233,7 @@ class MainActivity : AppCompatActivity(), SwipeRefreshLayout.OnRefreshListener {
             this.runOnUiThread {
                 if (dailyWeather != null) {
                     userCity.dailyWeather = dailyWeather
-                    RealmHelper.commitObject(userCity)
+                    RealmHelper.commitOrUpdateObject(userCity)
                     initSavedCity()
                 } else {
                     Toast.makeText(this, "Город не найден, попробуйте позднее или измените запрос", Toast.LENGTH_LONG)
